@@ -1,43 +1,55 @@
-print("Comienzo del proyecto")
-import os
-import sys
-import shutil
+import argparse
+from BulkFileRenamer import BulkFileRenamer
 
 
 def main():
-    if len(sys.argv) != 4:
-        print(
-            "Usage: python main.py <source_directory> <search_string> <replace_string>"
-        )
+    args = parsear()
+    if not args.order_by:
+        renamer = BulkFileRenamer(args.source, args.replace, args.search)
     else:
-        source_dir = sys.argv[1]
-        search_str = sys.argv[2]
-        replace_str = sys.argv[3]
+        renamer = BulkFileRenamer(
+            args.source,
+            args.replace,
+            args.search,
+            args.order_by,
+            args.number_files,
+            args.rev,
+        )
 
-        renamer = BulkFileRenamer(source_dir, search_str, replace_str)
-        renamer.rename_files()
 
+def parsear():
+    parser = argparse.ArgumentParser(
+        prog="Welcome to the Bulk File Rename Tool", epilog="Thanks for your time"
+    )
 
-class BulkFileRenamer:
-    def __init__(self, source_dir, search_str, replace_str):
-        self.source_dir = source_dir
-        self.search_str = search_str
-        self.replace_str = replace_str
+    # ----------------PARSER-------------------------------------------------------------------------------------------------------
 
-    def rename_files(self):
-        try:
-            for root, _, files in os.walk(self.source_dir):
-                for filename in files:
-                    if self.search_str in filename:
-                        new_filename = filename.replace(
-                            self.search_str, self.replace_str
-                        )
-                        old_path = os.path.join(root, filename)
-                        new_path = os.path.join(root, new_filename)
-                        shutil.move(old_path, new_path)
-                        print(f"Renamed: {old_path} to {new_path}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+    parser.add_argument("source", help="Directory source.")
+    parser.add_argument("-r", "--replace", default="File", help="Replace pattern")
+    parser.add_argument("-s", "--search", default=None, help="Search pattern")
+
+    # --------------SUBPARSERS------------------------------------------------------------------------------------------------------------------------
+
+    subparsers = parser.add_subparsers(dest="order_by", help="Sort by: ")
+
+    # Order by file size
+    size_parser = subparsers.add_parser("size", help="Sort by size")
+    size_parser.add_argument("number_files", type=int)
+    size_parser.add_argument(
+        "-rev", action="store_true", help="Reverse direction"
+    )  # Si pongo -rev, almacena el valor True ///
+    # True = Descendente ; False = Ascendente
+    # Order by name
+    name_parser = subparsers.add_parser("name", help="Sort by name")
+    name_parser.add_argument("number_files", type=int)
+    name_parser.add_argument("-rev", action="store_true", help="Reverse direction")
+
+    # Order by time of file creation
+    time_parser = subparsers.add_parser("time", help="Sort by time of modification")
+    time_parser.add_argument("number_files", type=int)
+    time_parser.add_argument("-rev", action="store_true", help="Reverse direction")
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
